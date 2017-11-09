@@ -52,29 +52,26 @@ def sample_get_cache_itunes_data(baseurl, params=None):
 
 class Song:
     def __init__(self, song_dict):
+        # song data
         self.track_id = song_dict['trackId']
         self.track_name = song_dict['trackName']
         self.track_number = song_dict['trackNumber']
         self.genre = song_dict['primaryGenreName']
         self.track_url = song_dict['trackViewUrl']
 
+        # album data
         self.album_id = song_dict['collectionId']
         self.album_name = song_dict['collectionName']
         self.album_url = song_dict['collectionViewUrl']
 
+        # artist data
         self.artist_id = song_dict['artistId']
         self.artist_name = song_dict['artistName']
         self.artist_url = song_dict['artistViewUrl']
 
     def get_song_dict(self):
         return {
-            'track_id': self.track_id,
-            'track_name': self.track_name,
-            'track_number': self.track_number,
-            'genre': self.genre,
-            'track_url': self.track_url,
-            'artist_id': self.artist_id,
-            'album_id': self.album_id
+
         }
 
     def get_artist_dict(self):
