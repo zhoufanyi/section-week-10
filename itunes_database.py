@@ -71,7 +71,13 @@ class Song:
 
     def get_song_dict(self):
         return {
-
+            "track_id": self.track_id,
+            "track_name": self.track_name,
+            "track_number": self.track_number,
+            "genre": self.genre,
+            "track_url": self.track_url,
+            "artist_id": self.artist_id,
+            "album_id": self.album_id
         }
 
     def get_artist_dict(self):
@@ -118,6 +124,15 @@ def setup_database():
     # track_url TEXT
     # artist_id INTEGER
     # album_id INTEGER
+    cur.execute("""CREATE TABLE Songs(
+        track_id INTEGER PRIMARY KEY,
+        track_name VARCHAR(255) NOT NULL,
+        track_number INTEGER,
+        genre VARCHAR(128),
+        track_url TEXT,
+        artist_id INTEGER,
+        album_id INTEGER
+    )""")
 
     # TODO At the end of the exercise, if time permits
     # try using artist_id INTEGER REFERENCES Artists(artist_id)
@@ -129,6 +144,11 @@ def setup_database():
     # album_id INTEGER PRIMARY KEY
     # album_name VARCHAR, upto 255 characters, and should never be empty
     # album_url TEXT
+    cur.execute("""CREATE TABLE Albums(
+        album_id INTEGER PRIMARY KEY,
+        album_name VARCHAR(255) NOT NULL,
+        album_url TEXT
+    )""")
 
     # cur.execute("DROP TABLE IF EXISTS Artists")
 
@@ -137,7 +157,14 @@ def setup_database():
     # artist_name VARCHAR, upto 255 characters, and should never be empty
     # artist_url TEXT
 
+    cur.execute("""CREATE TABLE Artists(
+        artist_id INTEGER PRIMARY KEY,
+        artist_name VARCHAR(255) NOT NULL,
+        artist_url TEXT
+    )""")
+
     # TODO how do we save these changes?
+    conn.commit()
 
     print('Setup database complete')
 
@@ -152,6 +179,7 @@ def insert(conn, cur, table, data_dict):
         sql.SQL(', ').join(map(sql.Placeholder, column_names))
     )
     query_string = query.as_string(conn)
+    print(query_string)
     cur.execute(query_string, data_dict)
 
 def lookup_id(id):
@@ -178,19 +206,38 @@ def search_songs(search_term):
 
     conn, cur = get_connection_and_cursor()
     for song_dict in results:
-        song_object = Song(song_dict)
-
+        so = Song(song_dict)
+        # print(so)
         # TODO
-        # cur.execute("""INSERT INTO .... """, ...)
+        # track_id INTEGER PRIMARY KEY,
+        # track_name VARCHAR(255) NOT NULL,
+        # track_number INTEGER,
+        # genre VARCHAR(128),
+        # track_url TEXT,
+        # artist_id INTEGER,
+        # album_id INTEGER
+        # cur.execute("""INSERT INTO
+        #     Songs (track_id, track_name, track_number, genre, track_url, artist_id, album_id)
+        #     VALUES (%(track_id)s, %(track_name)s, %(track_number)s, %(genre)s, %(track_url)s, %(artist_id)s, %(album_id)s)
+        #     ON CONFLICT DO NOTHING""",
+        #     song_dict)
+        insert(conn, cur, 'Songs', so.get_song_dict())
+        insert(conn, cur, 'Artists', {
+
+        })
+        insert(conn, cur, 'Albums', {
+
+        })
 
 
     # TODO
-    # cur.execute("SELECT ...")
+    cur.execute("SELECT * from Songs")
     # cur.fetchone()
     # cur.fetchmany()
-    # cur.fetchall()
+    for row in cur.fetchall():
+        print(row)
 
-    # conn.commit()
+    conn.commit()
     # conn.rollback()
 
 if __name__ == '__main__':
