@@ -6,6 +6,7 @@ from config import *
 import sys
 import json
 
+DEBUG = True
 CACHE_DICTION = {}
 CACHE_FNAME = 'cache_file_name.json'
 db_connection = None
@@ -41,43 +42,46 @@ def sample_get_cache_itunes_data(baseurl, params=None):
         params = {}
 
     unique_ident = params_unique_combination(baseurl, params)
+    print(unique_ident)
 
     # if not in cache, get fresh data
     if unique_ident not in CACHE_DICTION:
         response = requests.get(baseurl, params=params)
         CACHE_DICTION[unique_ident] = json.loads(response.text)
         save_cache()
+        if DEBUG:
+            print('--> fresh copy')
+    else:
+        if DEBUG:
+            print('--> from cache')
 
     return CACHE_DICTION[unique_ident]
 
 class Song:
     def __init__(self, song_dict):
-        # song data
         self.track_id = song_dict['trackId']
         self.track_name = song_dict['trackName']
         self.track_number = song_dict['trackNumber']
         self.genre = song_dict['primaryGenreName']
         self.track_url = song_dict['trackViewUrl']
 
-        # album data
         self.album_id = song_dict['collectionId']
         self.album_name = song_dict['collectionName']
         self.album_url = song_dict['collectionViewUrl']
 
-        # artist data
         self.artist_id = song_dict['artistId']
         self.artist_name = song_dict['artistName']
         self.artist_url = song_dict['artistViewUrl']
 
     def get_song_dict(self):
         return {
-            "track_id": self.track_id,
-            "track_name": self.track_name,
-            "track_number": self.track_number,
-            "genre": self.genre,
-            "track_url": self.track_url,
-            "artist_id": self.artist_id,
-            "album_id": self.album_id
+            'track_id': self.track_id,
+            'track_name': self.track_name,
+            'track_number': self.track_number,
+            'genre': self.genre,
+            'track_url': self.track_url,
+            'artist_id': self.artist_id,
+            'album_id': self.album_id
         }
 
     def get_artist_dict(self):
@@ -108,88 +112,44 @@ def get_connection_and_cursor():
     return db_connection, db_cursor
 
 def setup_database():
-    # Invovles DDL commands
-    # DDL --> Data Definition Language
-    # CREATE, DROP, ALTER, RENAME, TRUNCATE
-
     conn, cur = get_connection_and_cursor()
 
     # cur.execute("DROP TABLE IF EXISTS Songs")
+    cur.execute("""CREATE TABLE IF NOT EXISTS Songs (
+            track_id INTEGER PRIMARY KEY,
+            track_name VARCHAR(255) NOT NULL,
+            track_number INTEGER,
+            genre VARCHAR(128),
+            track_url TEXT,
+            artist_id INTEGER,
+            album_id INTEGER
+        )""")
 
-    # TODO Create Songs table
-    # track_id INTEGER PRIMARY KEY
-    # track_name VARCHAR, upto 255 characters, and should never be empty
-    # track_number INTEGER
-    # genre VARCHAR, upto 128 characters
-    # track_url TEXT
-    # artist_id INTEGER
-    # album_id INTEGER
-<<<<<<< HEAD
-    ## triple double quotes implies multi-line comments
-=======
->>>>>>> upstream/master
-    cur.execute("""CREATE TABLE Songs(
-        track_id INTEGER PRIMARY KEY,
-        track_name VARCHAR(255) NOT NULL,
-        track_number INTEGER,
-        genre VARCHAR(128),
-        track_url TEXT,
-        artist_id INTEGER,
-<<<<<<< HEAD
-        album_id INTEGER)
-        """)
-=======
-        album_id INTEGER
-    )""")
->>>>>>> upstream/master
-
-    # TODO At the end of the exercise, if time permits
     # try using artist_id INTEGER REFERENCES Artists(artist_id)
     # try using album_id INTEGER REFERENCES Albums(album_id)
 
     # cur.execute("DROP TABLE IF EXISTS Albums")
+    cur.execute("""CREATE TABLE IF NOT EXISTS Albums (
+            album_id INTEGER PRIMARY KEY,
+            album_name VARCHAR(255) NOT NULL,
+            album_url TEXT
+        )""")
 
-    # TODO Create Albums table
-    # album_id INTEGER PRIMARY KEY
-    # album_name VARCHAR, upto 255 characters, and should never be empty
-    # album_url TEXT
-    cur.execute("""CREATE TABLE Albums(
-        album_id INTEGER PRIMARY KEY,
-        album_name VARCHAR(255) NOT NULL,
-<<<<<<< HEAD
-        album_url TEXT)
-        """)
-=======
-        album_url TEXT
-    )""")
-
->>>>>>> upstream/master
     # cur.execute("DROP TABLE IF EXISTS Artists")
+    cur.execute("""CREATE TABLE IF NOT EXISTS Artists (
+            artist_id INTEGER PRIMARY KEY,
+            artist_name VARCHAR(255) NOT NULL,
+            artist_url TEXT
+        )""")
 
-    # TODO Create Artists table
-    # artist_id INTEGER PRIMARY KEY
-    # artist_name VARCHAR, upto 255 characters, and should never be empty
-    # artist_url TEXT
-    cur.execute("""CREATE TABLE Artists(
-        artist_id INTEGER PRIMARY KEY,
-        artist_name VARCHAR(255) NOT NULL,
-        artist_url TEXT)
-        """)
-
-    cur.execute("""CREATE TABLE Artists(
-        artist_id INTEGER PRIMARY KEY,
-        artist_name VARCHAR(255) NOT NULL,
-        artist_url TEXT
-    )""")
-
-    # TODO how do we save these changes?
     conn.commit()
 
     print('Setup database complete')
 
 def insert(conn, cur, table, data_dict):
     column_names = data_dict.keys()
-    # print(column_names)
+    # if DEBUG:
+    #     print(column_names)
 
     # generate insert into query string
     query = sql.SQL('INSERT INTO {0}({1}) VALUES({2}) ON CONFLICT DO NOTHING').format(
@@ -198,7 +158,6 @@ def insert(conn, cur, table, data_dict):
         sql.SQL(', ').join(map(sql.Placeholder, column_names))
     )
     query_string = query.as_string(conn)
-    print(query_string)
     cur.execute(query_string, data_dict)
 
 def lookup_id(id):
@@ -218,71 +177,26 @@ def search_songs(search_term):
         }
     )
     results = response['results']
-
-    # involves DML commands
-    # DML --> Data Manipulation Language
-    # SELECT, INSERT, DELETE, UPDATE
+    if DEBUG:
+        print(results)
 
     conn, cur = get_connection_and_cursor()
     for song_dict in results:
-        so = Song(song_dict)
-<<<<<<< HEAD
+        song_object = Song(song_dict)
+        cur.execute("""INSERT INTO
+            Songs(track_id, track_name, track_number, genre, track_url, artist_id, album_id)
+            values(%(track_id)s, %(track_name)s, %(track_number)s, %(genre)s, %(track_url)s, %(artist_id)s, %(album_id)s)
+            on conflict do nothing""", song_object.get_song_dict())
 
-=======
-        # print(so)
->>>>>>> upstream/master
-        # TODO
-        # track_id INTEGER PRIMARY KEY,
-        # track_name VARCHAR(255) NOT NULL,
-        # track_number INTEGER,
-        # genre VARCHAR(128),
-        # track_url TEXT,
-        # artist_id INTEGER,
-        # album_id INTEGER
-<<<<<<< HEAD
-    song_dict = {"so.track_id":so.track_id, 
-        "so.track_name":so.track_name,
-        "so.track_number":so.track_number,
-        "so.genre": so.genre,
-        "so.track_url":so.track_url, 
-        "so.artist_id":so.artist_id, 
-        "so.album_id":so.album_id}
-    cur.execute("""INSERT INTO 
-        Songs(track_id, track_name, track_number, genre, track_urartist_id, album_id)
-        values(%s,%s,%s,%s,%s,%s,%s)
-        ON CONFLICT DO NOTHING""",
-        song_dict
-        )
-=======
-        # cur.execute("""INSERT INTO
-        #     Songs (track_id, track_name, track_number, genre, track_url, artist_id, album_id)
-        #     VALUES (%(track_id)s, %(track_name)s, %(track_number)s, %(genre)s, %(track_url)s, %(artist_id)s, %(album_id)s)
-        #     ON CONFLICT DO NOTHING""",
-        #     song_dict)
-        insert(conn, cur, 'Songs', so.get_song_dict())
-        insert(conn, cur, 'Artists', {
+        # insert(conn, cur, 'Songs', song_object.get_song_dict())
+        # insert(conn, cur, 'Artists', song_object.get_artist_dict())
+        # insert(conn, cur, 'Albums', song_object.get_album_dict())
 
-        })
-        insert(conn, cur, 'Albums', {
-
-        })
-
->>>>>>> upstream/master
-
-    # TODO
-    cur.execute("SELECT * from Songs")
-    # cur.fetchone()
-    # cur.fetchmany()
-<<<<<<< HEAD
-    # cur.fetchall()
-    for ro in cur.fetchall():
-=======
-    for row in cur.fetchall():
->>>>>>> upstream/master
-        print(row)
-
+    cur.execute("SELECT * FROM Songs")
+    # print(cur.fetchall())
+    for song_row in cur.fetchall():
+        print(song_row)
     conn.commit()
-    # conn.rollback()
 
 if __name__ == '__main__':
     command = None
