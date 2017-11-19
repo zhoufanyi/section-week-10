@@ -118,6 +118,16 @@ def setup_database():
     # track_url TEXT
     # artist_id INTEGER
     # album_id INTEGER
+    ## triple double quotes implies multi-line comments
+    cur.execute("""CREATE TABLE Songs(
+        track_id INTEGER PRIMARY KEY,
+        track_name VARCHAR(255) NOT NULL,
+        track_number INTEGER,
+        genre VARCHAR(128),
+        track_url TEXT,
+        artist_id INTEGER,
+        album_id INTEGER)
+        """)
 
     # TODO At the end of the exercise, if time permits
     # try using artist_id INTEGER REFERENCES Artists(artist_id)
@@ -129,13 +139,22 @@ def setup_database():
     # album_id INTEGER PRIMARY KEY
     # album_name VARCHAR, upto 255 characters, and should never be empty
     # album_url TEXT
-
+    cur.execute("""CREATE TABLE Albums(
+        album_id INTEGER PRIMARY KEY,
+        album_name VARCHAR(255) NOT NULL,
+        album_url TEXT)
+        """)
     # cur.execute("DROP TABLE IF EXISTS Artists")
 
     # TODO Create Artists table
     # artist_id INTEGER PRIMARY KEY
     # artist_name VARCHAR, upto 255 characters, and should never be empty
     # artist_url TEXT
+    cur.execute("""CREATE TABLE Artists(
+        artist_id INTEGER PRIMARY KEY,
+        artist_name VARCHAR(255) NOT NULL,
+        artist_url TEXT)
+        """)
 
     # TODO how do we save these changes?
 
@@ -178,19 +197,39 @@ def search_songs(search_term):
 
     conn, cur = get_connection_and_cursor()
     for song_dict in results:
-        song_object = Song(song_dict)
+        so = Song(song_dict)
 
         # TODO
-        # cur.execute("""INSERT INTO .... """, ...)
-
+        # track_id INTEGER PRIMARY KEY,
+        # track_name VARCHAR(255) NOT NULL,
+        # track_number INTEGER,
+        # genre VARCHAR(128),
+        # track_url TEXT,
+        # artist_id INTEGER,
+        # album_id INTEGER
+    song_dict = {"so.track_id":so.track_id, 
+        "so.track_name":so.track_name,
+        "so.track_number":so.track_number,
+        "so.genre": so.genre,
+        "so.track_url":so.track_url, 
+        "so.artist_id":so.artist_id, 
+        "so.album_id":so.album_id}
+    cur.execute("""INSERT INTO 
+        Songs(track_id, track_name, track_number, genre, track_urartist_id, album_id)
+        values(%s,%s,%s,%s,%s,%s,%s)
+        ON CONFLICT DO NOTHING""",
+        song_dict
+        )
 
     # TODO
-    # cur.execute("SELECT ...")
+    cur.execute("SELECT * from Songs")
     # cur.fetchone()
     # cur.fetchmany()
     # cur.fetchall()
+    for ro in cur.fetchall():
+        print(row)
 
-    # conn.commit()
+    conn.commit()
     # conn.rollback()
 
 if __name__ == '__main__':
